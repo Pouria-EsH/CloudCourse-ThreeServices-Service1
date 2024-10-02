@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cc-service1/broker"
 	"cc-service1/service"
 	"cc-service1/storage"
 	"fmt"
@@ -30,7 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	srv := service.NewService1(*database, *imagestore)
+	cloudamq_url := os.Getenv("CCSERV1_AMQP_URL")
+	cloudamq := broker.NewCloudAMQ(cloudamq_url, "cc-pr")
+
+	srv := service.NewService1(*database, *imagestore, *cloudamq)
 	err = srv.Execute()
 
 	if err != nil {

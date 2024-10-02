@@ -1,20 +1,23 @@
 package service
 
 import (
+	"cc-service1/broker"
 	"cc-service1/storage"
 
 	"github.com/labstack/echo/v4"
 )
 
 type Service1 struct {
-	DataBase storage.RequestDB
-	PicStore storage.ImageStorage
+	DataBase  storage.RequestDB
+	PicStore  storage.ImageStorage
+	MsgBroker broker.CloudAMQ
 }
 
-func NewService1(db storage.RequestDB, imgstore storage.ImageStorage) *Service1 {
+func NewService1(db storage.RequestDB, imgstore storage.ImageStorage, msgbroker broker.CloudAMQ) *Service1 {
 	return &Service1{
-		DataBase: db,
-		PicStore: imgstore,
+		DataBase:  db,
+		PicStore:  imgstore,
+		MsgBroker: msgbroker,
 	}
 }
 

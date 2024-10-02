@@ -59,7 +59,11 @@ func (s Service1) RequestHandler(e echo.Context) error {
 		return err
 	}
 
-	// TODO add request to message broker
+	err = s.MsgBroker.Send(requestID)
+	if err != nil {
+		fmt.Println("Error at rabbitMQ send: %w", err)
+		return err
+	}
 
 	fmt.Printf("request registered successfuly with id: %s\n", requestID)
 	return e.JSON(http.StatusAccepted, &RequestResponse{Status: "accepted", RequestID: requestID})
