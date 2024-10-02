@@ -2,6 +2,7 @@ package service
 
 import (
 	"cc-service1/storage"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -14,7 +15,7 @@ type RequestResponse struct {
 }
 
 type StatusResponse struct {
-	Status   string `json:"name" xml:"name"`
+	Status   string `json:"status" xml:"name"`
 	ImageURL string `json:"image-url" xml:"image-url"`
 }
 
@@ -65,6 +66,22 @@ func (s Service1) RequestHandler(e echo.Context) error {
 }
 
 func (s Service1) StatusHandler(e echo.Context) error {
-	// TODO
-	return nil
+	requestId := e.FormValue("request-id")
+	reqEntry, err := s.DataBase.Get(requestId)
+	if err != nil {
+		if errors.As(err, &storage.RequestNotFoundError{}) {
+			return e.JSON(http.StatusNotFound, &StatusResponse{
+				Status:   "Not Found",
+				ImageURL: "",
+			})
+		}
+		return err
+	}
+
+	fmt.Printf("request for status with id: %s was found successfuly\n", requestId)
+
+	return e.JSON(http.StatusOK, &StatusResponse{
+		Status:   reqEntry.ReqStatus,
+		ImageURL: reqEntry.NewImageURL,
+	})
 }
