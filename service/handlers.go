@@ -49,19 +49,21 @@ func (s Service1) RequestHandler(e echo.Context) error {
 
 	err = s.DataBase.Save(dbEntry)
 	if err != nil {
-		fmt.Println("Error at database insert: %w", err)
+		fmt.Println("Error at database insert:", err)
 		return err
 	}
 
 	_, err = s.PicStore.Upload(imageSrc, file.Size, requestID)
 	if err != nil {
-		fmt.Println("Error at image upload: %w", err)
+		fmt.Println("Error at image upload:", err)
+		s.failureHandler(requestID)
 		return err
 	}
 
 	err = s.MsgBroker.Send(requestID)
 	if err != nil {
-		fmt.Println("Error at rabbitMQ send: %w", err)
+		fmt.Println("Error at rabbitMQ send:", err)
+		s.failureHandler(requestID)
 		return err
 	}
 
@@ -73,12 +75,14 @@ func (s Service1) StatusHandler(e echo.Context) error {
 	requestId := e.FormValue("request-id")
 	reqEntry, err := s.DataBase.Get(requestId)
 	if err != nil {
-		if errors.As(err, &storage.RequestNotFoundError{}) {
+		var notfound *storage.RequestNotFoundError
+		if errors.As(err, &notfound) {
 			return e.JSON(http.StatusNotFound, &StatusResponse{
 				Status:   "Not Found",
 				ImageURL: "",
 			})
 		}
+		s.failureHandler(requestId)
 		return err
 	}
 
@@ -88,4 +92,16 @@ func (s Service1) StatusHandler(e echo.Context) error {
 		Status:   reqEntry.ReqStatus,
 		ImageURL: reqEntry.NewImageURL,
 	})
+}
+
+func (s Service1) failureHandler(requstId string) {
+	err := s.DataBase.SetStatus(requstId, "failure")
+	if err != nil {
+		var notfound *storage.RequestNotFoundError
+		if !errors.As(err, &notfound) {
+			fmt.Printf("couldn't update request %s status to \"failed\": %v\n", requstId, err)
+		}
+		return
+	}
+	fmt.Printf("request %s status is set to 'failure'", requstId)
 }

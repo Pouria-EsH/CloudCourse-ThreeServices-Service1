@@ -85,3 +85,15 @@ func generateAlphanumericSequence(length int) string {
 	}
 	return string(randseq)
 }
+
+func (mdb MySQLDB) SetStatus(requestId string, status string) error {
+	query := "UPDATE Requests SET RequestStatus=? WHERE RequestID=?"
+	_, err := mdb.rdatabase.Exec(query, status, requestId)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return RequestNotFoundError{ReqId: requestId}
+		}
+		return err
+	}
+	return nil
+}

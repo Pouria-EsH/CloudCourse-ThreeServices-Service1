@@ -6,6 +6,7 @@ type RequestDB interface {
 	Save(requestEntry PicRequestEntry) error
 	Get(requestId string) (PicRequestEntry, error)
 	GenerateUniqueID() (string, error)
+	SetStatus(requestId string, status string) error
 }
 
 type RequestNotFoundError struct {
