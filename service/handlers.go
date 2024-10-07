@@ -4,39 +4,37 @@ import (
 	"cc-service1/storage"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
 type RequestResponse struct {
-	Status    string `json:"status" xml:"status"`
-	RequestID string `json:"request-id" xml:"request-id"`
+	Status    string `json:"status"`
+	RequestID string `json:"request-id"`
 }
 
 type StatusResponse struct {
-	Status   string `json:"status" xml:"name"`
-	ImageURL string `json:"image-url" xml:"image-url"`
+	Status   string `json:"status"`
+	ImageURL string `json:"image-url"`
 }
 
 func (s Service1) RequestHandler(e echo.Context) error {
 	emailAddress := e.FormValue("email")
 	file, err := e.FormFile("image")
 	if err != nil {
-		fmt.Println("Error at image file receive %w", err)
-		return err
+		return fmt.Errorf("at image file receive: %w", err)
 	}
 	imageSrc, err := file.Open()
 	if err != nil {
-		fmt.Println("Error at image file open %w", err)
-		return err
+		return fmt.Errorf("at image file open: %w", err)
 	}
 	defer imageSrc.Close()
 
 	requestID, err := s.DataBase.GenerateUniqueID()
 	if err != nil {
-		fmt.Println("Error at id generation: %w", err)
-		return err
+		return fmt.Errorf("at id generation: %w", err)
 	}
 
 	dbEntry := storage.PicRequestEntry{
@@ -49,25 +47,22 @@ func (s Service1) RequestHandler(e echo.Context) error {
 
 	err = s.DataBase.Save(dbEntry)
 	if err != nil {
-		fmt.Println("Error at database insert:", err)
-		return err
+		return fmt.Errorf("at database insert: %w", err)
 	}
 
 	_, err = s.PicStore.Upload(imageSrc, file.Size, requestID)
 	if err != nil {
-		fmt.Println("Error at image upload:", err)
 		s.failureHandler(requestID)
-		return err
+		return fmt.Errorf("at image upload: %w", err)
 	}
 
 	err = s.MsgBroker.Send(requestID)
 	if err != nil {
-		fmt.Println("Error at rabbitMQ send:", err)
 		s.failureHandler(requestID)
-		return err
+		return fmt.Errorf("at rabbitMQ send: %w", err)
 	}
 
-	fmt.Printf("request registered successfuly with id: %s\n", requestID)
+	log.Println("request registered successfuly with id: ", requestID)
 	return e.JSON(http.StatusAccepted, &RequestResponse{Status: "accepted", RequestID: requestID})
 }
 
@@ -86,7 +81,7 @@ func (s Service1) StatusHandler(e echo.Context) error {
 		return err
 	}
 
-	fmt.Printf("request for status with id: %s was found successfuly\n", requestId)
+	log.Printf("request for status with id: %s was found successfuly\n", requestId)
 
 	return e.JSON(http.StatusOK, &StatusResponse{
 		Status:   reqEntry.ReqStatus,
@@ -99,9 +94,9 @@ func (s Service1) failureHandler(requstId string) {
 	if err != nil {
 		var notfound *storage.RequestNotFoundError
 		if !errors.As(err, &notfound) {
-			fmt.Printf("couldn't update request %s status to \"failed\": %v\n", requstId, err)
+			log.Printf("couldn't update request %s status to \"failed\": %v\n", requstId, err)
 		}
 		return
 	}
-	fmt.Printf("request %s status is set to 'failure'", requstId)
+	log.Printf("request %s status is set to 'failure'", requstId)
 }

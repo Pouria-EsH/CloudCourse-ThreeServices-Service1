@@ -1,7 +1,7 @@
 package broker
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -46,7 +46,7 @@ func (c CloudAMQ) Send(message string) error {
 	returns := ch.NotifyReturn(make(chan amqp.Return))
 	go func() {
 		for r := range returns {
-			fmt.Printf("Warning: Message returned from RabbitMQ: %s", r.ReplyText)
+			log.Printf("Warning: Message returned from RabbitMQ: %s", r.ReplyText)
 		}
 	}()
 

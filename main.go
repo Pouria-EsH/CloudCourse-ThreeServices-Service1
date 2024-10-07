@@ -4,7 +4,7 @@ import (
 	"cc-service1/broker"
 	"cc-service1/service"
 	"cc-service1/storage"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -19,8 +19,7 @@ func main() {
 		acs3_accessKey,
 		acs3_secretKey)
 	if err != nil {
-		fmt.Println("Fatal error at object storage: %w", err)
-		os.Exit(1)
+		log.Fatalf("Fatal error at object storage: %v\n", err)
 	}
 
 	mySQL_username := os.Getenv("CCSERV1_MYSQL_USERNAME")
@@ -28,8 +27,7 @@ func main() {
 	mySQL_address := "mysql-container:3306"
 	database, err := storage.NewMySQLDB(mySQL_username, mySQL_password, mySQL_address, "ccp1")
 	if err != nil {
-		fmt.Println("Fatal error at database: %w", err)
-		os.Exit(1)
+		log.Fatalf("Fatal error at database: %v\n", err)
 	}
 
 	cloudamq_url := os.Getenv("CCSERV1_AMQP_URL")
@@ -39,6 +37,6 @@ func main() {
 	err = srv.Execute()
 
 	if err != nil {
-		fmt.Println("Could not start service1")
+		log.Fatalf("could not start service1: %v\n", err)
 	}
 }
