@@ -11,11 +11,19 @@ import (
 )
 
 func main() {
-	godotenv.Load(".env")
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("no .env file found")
+	}
+
+	acs3_bucket := os.Getenv("CCSERV1_ACS3_BUCKET")
+	acs3_region := os.Getenv("CCSERV1_ACS3_REGION")
+	acs3_endpoint := os.Getenv("CCSERV1_ACS3_ENDPOINT")
 	acs3_accessKey := os.Getenv("CCSERV1_ACS3_ACCESSKEY")
 	acs3_secretKey := os.Getenv("CCSERV1_ACS3_SECRETKEY")
-	imagestore, err := storage.NewArvanCloudS3("cc-practice-004", "ir-thr-at1",
-		"https://s3.ir-thr-at1.arvanstorage.com",
+	imagestore, err := storage.NewArvanCloudS3(
+		acs3_bucket,
+		acs3_region,
+		acs3_endpoint,
 		acs3_accessKey,
 		acs3_secretKey)
 	if err != nil {
@@ -24,7 +32,7 @@ func main() {
 
 	mySQL_username := os.Getenv("CCSERV1_MYSQL_USERNAME")
 	mySQL_password := os.Getenv("CCSERV1_MYSQL_PASSWORD")
-	mySQL_address := "mysql-container:3306"
+	mySQL_address := os.Getenv("CCSERV1_MYSQL_ADDRESS")
 	database, err := storage.NewMySQLDB(mySQL_username, mySQL_password, mySQL_address, "ccp1")
 	if err != nil {
 		log.Fatalf("Fatal error at database: %v\n", err)
